@@ -9,7 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-func GetProfile(c *fiber.Ctx) error {
+func GetUser(c *fiber.Ctx) error {
 	// Ambil data user dari token JWT
 	userToken := c.Locals("user").(*jwt.Token)
 	claims := userToken.Claims.(jwt.MapClaims)
@@ -18,7 +18,7 @@ func GetProfile(c *fiber.Ctx) error {
 	// Ambil data user dari database
 	var user models.User
 	err := database.DB.QueryRow("SELECT id, name, email FROM users WHERE id = ?", int(userID)).
-		Scan(&user.ID, &user.Name, &user.Email)
+		Scan(&user.ID, &user.FullName, &user.Email)
 	if err == sql.ErrNoRows {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"error": "User not found"})
 	} else if err != nil {

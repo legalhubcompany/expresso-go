@@ -19,8 +19,6 @@ func ApiKeyMiddleware(c *fiber.Ctx) error {
 
 func SetupRoutes(app *fiber.App) {
 	api := app.Group("/api")
-	api.Post("/login", controllers.Login)
-	api.Post("/register", controllers.Register)
 	api.Post("/register-itikaf", controllers.RegisterPesertaItikaf)
 	api.Get("/register-masjid/:id_event", controllers.GetMasjidList)
 	api.Get("/rekap-absen/:id_masjid", controllers.GetRekapAbsen)
@@ -29,13 +27,18 @@ func SetupRoutes(app *fiber.App) {
 	api.Get("/dashboard", controllers.GetNewRegistrantStatistics)
 	api.Get("/statistics-event-all", controllers.GetAttendanceStatistics)
 
-	apiV1 := app.Group("/api/v1")
-	apiV1.Post("/absent-qr", ApiKeyMiddleware, controllers.SaveAbsenQR)
-	apiV1.Post("/collections-create", controllers.CreateCollection)
-	apiV1.Get("/collections-get-absensi/:slug", controllers.ViewCollection)
-	apiV1.Get("/collections-get", controllers.GetCollectionsMeta)
-	apiV1.Get("/collections-get-meta/:slug", controllers.GetCollectionsMetaDetail)
+	auth := app.Group("/api/public/v1")
+	auth.Post("/login", controllers.Login)
+	auth.Post("/register", controllers.Register)
 
-	user := api.Group("/users", middlewares.JWTMiddleware())
-	user.Get("/profile", controllers.GetProfile)
+	// apiV1.Post("/absent-qr", ApiKeyMiddleware, controllers.SaveAbsenQR)
+	// apiV1.Post("/collections-create", controllers.CreateCollection)
+	// apiV1.Get("/collections-get-absensi/:slug", controllers.ViewCollection)
+	// apiV1.Get("/collections-get", controllers.GetCollectionsMeta)
+	// apiV1.Get("/collections-get-meta/:slug", controllers.GetCollectionsMetaDetail)
+
+	apiV1 := app.Group("/api/v1", middlewares.JWTMiddleware())
+	apiV1.Get("/user/profile", controllers.GetProfile)
+	apiV1.Put("/user/profile", controllers.UpdateProfile)
+	apiV1.Post("/user/profile/upload-photo", controllers.UploadProfilePicture)
 }
