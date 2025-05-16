@@ -38,12 +38,6 @@ func SetupRoutes(app *fiber.App) {
 	new_auth.Get("/login/gateway", controllers.WhatsAppGateway)
 	new_auth.Post("/login/validate", controllers.ValidateWhatsAppLoginToken)
 
-	// apiV1.Post("/absent-qr", ApiKeyMiddleware, controllers.SaveAbsenQR)
-	// apiV1.Post("/collections-create", controllers.CreateCollection)
-	// apiV1.Get("/collections-get-absensi/:slug", controllers.ViewCollection)
-	// apiV1.Get("/collections-get", controllers.GetCollectionsMeta)
-	// apiV1.Get("/collections-get-meta/:slug", controllers.GetCollectionsMetaDetail)
-
 	apiV1 := app.Group("/api/v1", middlewares.JWTMiddleware())
 	apiV1.Get("/user/profile", controllers.GetProfile)
 	apiV1.Put("/user/profile", controllers.UpdateProfile)
