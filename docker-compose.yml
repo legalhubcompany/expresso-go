@@ -3,14 +3,14 @@ version: '3.8'
 services:
   backend:
     build: .
-    container_name: golang_shollu
+    container_name: golang_legalhub
     restart: always
     environment:
-      DB_HOST: "185.232.14.52"
+      DB_HOST: "ec2-13-250-32-243.ap-southeast-1.compute.amazonaws.com"
       DB_PORT: "3306"
-      DB_USER: "u483254679_shollu"
-      DB_PASSWORD: "Shollu2025"
-      DB_NAME: "u483254679_shollu"
+      DB_USER: "remotelegalhub"
+      DB_PASSWORD: "Leg@lhubdb"
+      DB_NAME: "legalhub_db"
       JWT_SECRET: "supersecretjwt"
     ports:
       - "3000:3000"

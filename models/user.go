@@ -10,3 +10,13 @@ type User struct {
 	Role           string  `json:"role"`
 	ProfilePicture *string `json:"profile_picture,omitempty"`
 }
+
+type UserResponse struct {
+	ID             string `json:"id"`
+	FullName       string `json:"full_name"`
+	Email          string `json:"email"`
+	PhoneNumber    string `json:"phone_number"`
+	Gender         string `json:"gender"`
+	Role           string `json:"role"`
+	ProfilePicture string `json:"profile_picture"`
+}
