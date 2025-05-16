@@ -15,8 +15,8 @@ jobs:
       - name: Setup SSH Access
         run: |
           mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/github_action.pem
+          chmod 600 ~/.ssh/github_action.pem
           ssh-keyscan -H ec2-13-250-32-243.ap-southeast-1.compute.amazonaws.com >> ~/.ssh/known_hosts
 
       - name: Copy deploy script to EC2
@@ -29,8 +29,8 @@ jobs:
           docker-compose up -d --build" > deploy.sh
           
           chmod +x deploy.sh
-          scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no deploy.sh ubuntu@ec2-13-250-32-243.ap-southeast-1.compute.amazonaws.com:/tmp/deploy.sh
+          scp -i ~/.ssh/github_action.pem -o StrictHostKeyChecking=no deploy.sh ubuntu@ec2-13-250-32-243.ap-southeast-1.compute.amazonaws.com:/tmp/deploy.sh
 
       - name: Run deploy script on EC2
         run: |
-          ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ubuntu@ec2-13-250-32-243.ap-southeast-1.compute.amazonaws.com 'bash /tmp/deploy.sh'
+          ssh -i ~/.ssh/github_action.pem -o StrictHostKeyChecking=no ubuntu@ec2-13-250-32-243.ap-southeast-1.compute.amazonaws.com 'bash /tmp/deploy.sh'
