@@ -18,14 +18,6 @@ func ApiKeyMiddleware(c *fiber.Ctx) error {
 }
 
 func SetupRoutes(app *fiber.App) {
-	api := app.Group("/api")
-	api.Post("/register-itikaf", controllers.RegisterPesertaItikaf)
-	api.Get("/register-masjid/:id_event", controllers.GetMasjidList)
-	api.Get("/rekap-absen/:id_masjid", controllers.GetRekapAbsen)
-	api.Get("/get-masjid/:id_masjid", controllers.GetMasjidByID)
-	api.Get("/statistics-event", controllers.GetEventStatistics)
-	api.Get("/dashboard", controllers.GetNewRegistrantStatistics)
-	api.Get("/statistics-event-all", controllers.GetAttendanceStatistics)
 
 	auth := app.Group("/api/public/v1")
 	auth.Post("/login", controllers.Login)
