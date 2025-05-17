@@ -23,11 +23,14 @@ func SetupRoutes(app *fiber.App) {
 	auth.Post("/login", controllers.Login)
 	auth.Post("/register", controllers.Register)
 
+	gateway := app.Group("/gateway")
+	gateway.Get("/whatsapp-login", controllers.WhatsAppGateway)
+
 	// new Login Via Whatsapp
 	new_auth := app.Group("/api/auth/v2")
 	new_auth.Post("/login/request", controllers.WhatsAppLoginRequest)
 	new_auth.Post("/login/whatsapp-bot", controllers.WhatsAppBotCallback)
-	new_auth.Get("/login/gateway", controllers.WhatsAppGateway)
+
 	new_auth.Post("/login/validate", controllers.ValidateWhatsAppLoginToken)
 
 	apiV1 := app.Group("/api/v1", middlewares.JWTMiddleware())

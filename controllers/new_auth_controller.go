@@ -88,7 +88,7 @@ func WhatsAppBotCallback(c *fiber.Ctx) error {
 		UPDATE login_tokens SET status = 'used', phone_number = ? WHERE token_id = ?
 	`, req.PhoneNumber, tokenID)
 
-	loginLink := "https://yourdomain.com/auth/login/gateway?token_id=" + tokenID
+	loginLink := "http://ec2-13-229-209-95.ap-southeast-1.compute.amazonaws.com:3000/gateway/whatsapp-login?token_id=" + tokenID
 
 	return utils.SuccessResponse(c, "Token valid. Kirim link ke user via WA", fiber.Map{
 		"is_new_user": isNewUser,
@@ -111,7 +111,8 @@ func WhatsAppGateway(c *fiber.Ctx) error {
 		return c.SendString("Token sudah tidak berlaku atau belum digunakan.")
 	}
 
-	return c.Redirect("yourapp://login/callback?token_id=" + tokenID)
+	return c.Redirect("exp://192.168.224.251:8081/--/(auth)/callback?token_id=" + tokenID)
+	// return c.Redirect("legalhub://login/callback?token_id=" + tokenID)
 }
 
 // Validasi token dari app dan generate JWT final
