@@ -111,7 +111,7 @@ func WhatsAppGateway(c *fiber.Ctx) error {
 		return c.SendString("Token sudah tidak berlaku atau belum digunakan.")
 	}
 
-	return c.Redirect("exp://192.168.224.251:8081/--/(auth)/callback?token_id=" + tokenID)
+	return c.Redirect("exp://192.168.1.7:8081/--/(auth)/callback?token_id=" + tokenID)
 	// return c.Redirect("legalhub://login/callback?token_id=" + tokenID)
 }
 
