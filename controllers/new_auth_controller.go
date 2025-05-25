@@ -103,7 +103,7 @@ func WhatsAppBotCallback(c *fiber.Ctx) error {
 		UPDATE login_tokens SET status = 'used', phone_number = ? WHERE token_id = ?
 	`, req.PhoneNumber, tokenID)
 
-	loginLink := "http://ec2-13-229-209-95.ap-southeast-1.compute.amazonaws.com:3000/gateway/whatsapp-login?token_id=" + tokenID
+	loginLink := "http://ec2-13-229-209-95.ap-southeast-1.compute.amazonaws.com:5000/gateway/whatsapp-login?token_id=" + tokenID
 
 	return utils.SuccessResponse(c, "Token valid. Kirim link ke user via WA", fiber.Map{
 		"is_new_user": isNewUser,
