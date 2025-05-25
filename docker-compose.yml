@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  backend:
+    build: .
+    container_name: golang_legalhub
+    restart: always
+    environment:
+      DB_HOST: "ec2-13-229-209-95.ap-southeast-1.compute.amazonaws.com"
+      DB_PORT: "3306"
+      DB_USER: "remotelegalhub"
+      DB_PASSWORD: "Leg@lhubdb"
+      DB_NAME: "expresso_db"
+      JWT_SECRET: "supersecretjwt"
+    ports:
+      - "5000:5000"
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"   # Maksimal 50% dari 1 core CPU
+          memory: "256M" # Maksimal 256MB RAM
