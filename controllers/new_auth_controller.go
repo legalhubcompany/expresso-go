@@ -26,13 +26,28 @@ func WhatsAppLoginRequest(c *fiber.Ctx) error {
 	tokenID := utils.GenerateRandomString(32)
 	expiresAt := time.Now().Add(5 * time.Minute)
 
-	_, err := database.DB.Exec(`
-		INSERT INTO login_tokens (token_id, status, expires_at)
-		VALUES (?, ?, ?)`,
-		tokenID, "pending", expiresAt,
-	)
-	if err != nil {
-		return utils.ErrorResponse(c, 500, "Gagal membuat token login")
+	expoHost := c.Query("expo_host") // Ambil dari query param
+
+	if expoHost != "" {
+		// Jika ada expo_host, insert juga ke kolom expo_host
+		_, err := database.DB.Exec(`
+			INSERT INTO login_tokens (token_id, status, expires_at, expo_host)
+			VALUES (?, ?, ?, ?)`,
+			tokenID, "pending", expiresAt, expoHost,
+		)
+		if err != nil {
+			return utils.ErrorResponse(c, 500, "Gagal membuat token login")
+		}
+	} else {
+		// Jika tidak ada expo_host, insert tanpa kolom tersebut
+		_, err := database.DB.Exec(`
+			INSERT INTO login_tokens (token_id, status, expires_at)
+			VALUES (?, ?, ?)`,
+			tokenID, "pending", expiresAt,
+		)
+		if err != nil {
+			return utils.ErrorResponse(c, 500, "Gagal membuat token login")
+		}
 	}
 
 	return utils.SuccessResponse(c, "Token login berhasil dibuat", fiber.Map{
@@ -105,14 +120,22 @@ func WhatsAppGateway(c *fiber.Ctx) error {
 
 	var expiresAt time.Time
 	var status string
+	var expoHost sql.NullString
+
 	err := database.DB.QueryRow(`
-		SELECT expires_at, status FROM login_tokens WHERE token_id = ?`, tokenID).Scan(&expiresAt, &status)
+		SELECT expires_at, status, expo_host FROM login_tokens WHERE token_id = ?`, tokenID).
+		Scan(&expiresAt, &status, &expoHost)
+
 	if err != nil || time.Now().After(expiresAt) || status != "used" {
 		return c.SendString("Token sudah tidak berlaku atau belum digunakan.")
 	}
 
-	return c.Redirect("exp://192.168.1.7:8081/--/(auth)/callback?token_id=" + tokenID)
-	// return c.Redirect("legalhub://login/callback?token_id=" + tokenID)
+	if expoHost.Valid && expoHost.String != "" {
+		return c.Redirect(fmt.Sprintf("%s/--/(auth)/callback?token_id=%s", expoHost.String, tokenID))
+	}
+
+	// Fallback ke schema app
+	return c.Redirect("expressocoffee://login/callback?token_id=" + tokenID)
 }
 
 // Validasi token dari app dan generate JWT final
@@ -147,7 +170,7 @@ func ValidateWhatsAppLoginToken(c *fiber.Ctx) error {
 	)
 
 	err = database.DB.QueryRow(`
-		SELECT id, full_name, email, phone_number, gender, role, profile_picture
+		SELECT id, full_name, phone_number
 		FROM users WHERE phone_number = ?`, phoneNumber).
 		Scan(&id, &fullName, &email, &phone, &gender, &role, &profilePicture)
 	if err != nil {
@@ -156,13 +179,9 @@ func ValidateWhatsAppLoginToken(c *fiber.Ctx) error {
 	}
 
 	respUser := models.UserResponse{
-		ID:             id,
-		FullName:       nullToString(fullName),
-		Email:          nullToString(email),
-		PhoneNumber:    phone,
-		Gender:         nullToString(gender),
-		Role:           role,
-		ProfilePicture: nullToString(profilePicture),
+		ID:          id,
+		FullName:    nullToString(fullName),
+		PhoneNumber: phone,
 	}
 
 	isNewUser := respUser.FullName == ""
