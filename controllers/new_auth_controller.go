@@ -141,7 +141,7 @@ func WhatsAppGateway(c *fiber.Ctx) error {
 	if !strings.HasPrefix(expoURL, "exp://") {
 		expoURL = "exp://" + expoURL
 	}
-
+	return c.Redirect(fmt.Sprintf("%s/--/(auth)/callback?token_id=%s", expoURL, tokenID))
 	// Fallback ke schema app
 	// return c.Redirect("expressocoffee://login/callback?token_id=" + tokenID)
 }
