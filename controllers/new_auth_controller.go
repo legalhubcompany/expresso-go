@@ -137,9 +137,11 @@ func WhatsAppGateway(c *fiber.Ctx) error {
 		}
 		return c.Redirect(fmt.Sprintf("%s/--/(auth)/callback?token_id=%s", expoURL, tokenID))
 	}
-	expoURL := "https://u.expo.dev/d8350bf7-d565-477b-97ce-e8b1e078af3f/group/a59e05ae-ad44-4e4f-abb2-6a55809a29c3"
-	redirectURL := fmt.Sprintf("%s/--/(auth)/callback?token_id=%s", expoURL, tokenID)
-	return c.Redirect(redirectURL)
+	expoURL := "u.expo.dev/d8350bf7-d565-477b-97ce-e8b1e078af3f/group/ad206f1f-0f4a-4489-8062-9cab976a04aa"
+	if !strings.HasPrefix(expoURL, "exp://") {
+		expoURL = "exp://" + expoURL
+	}
+	return c.Redirect(fmt.Sprintf("%s/--/callback?token_id=%s", expoURL, tokenID))
 	// Fallback ke schema app
 	// return c.Redirect("expressocoffee://login/callback?token_id=" + tokenID)
 }
