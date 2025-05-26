@@ -169,14 +169,14 @@ func ValidateWhatsAppLoginToken(c *fiber.Ctx) error {
 	}
 
 	var (
-		id, phone, role                         string
-		fullName, email, gender, profilePicture sql.NullString
+		id, phone string
+		fullName  sql.NullString
 	)
 
 	err = database.DB.QueryRow(`
 		SELECT id, full_name, phone_number
 		FROM users WHERE phone_number = ?`, phoneNumber).
-		Scan(&id, &fullName, &email, &phone, &gender, &role, &profilePicture)
+		Scan(&id, &fullName, &phone)
 	if err != nil {
 		fmt.Println(err)
 		return utils.ErrorResponse(c, 401, "User tidak ditemukan")
