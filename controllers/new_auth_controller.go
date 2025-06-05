@@ -147,6 +147,67 @@ func WhatsAppGateway(c *fiber.Ctx) error {
 }
 
 // Validasi token dari app dan generate JWT final
+// func ValidateWhatsAppLoginToken(c *fiber.Ctx) error {
+// 	type Req struct {
+// 		TokenID string `json:"token_id" validate:"required"`
+// 	}
+// 	var req Req
+// 	if err := c.BodyParser(&req); err != nil {
+// 		return utils.ErrorResponse(c, 400, "Token ID tidak ditemukan")
+// 	}
+// 	if err := utils.Validate.Struct(req); err != nil {
+// 		return utils.ValidationErrorResponse(c, err)
+// 	}
+
+// 	var phoneNumber string
+// 	var status string
+// 	var expiresAt time.Time
+// 	err := database.DB.QueryRow(`
+// 		SELECT phone_number, status, expires_at
+// 		FROM login_tokens
+// 		WHERE token_id = ?
+// 	`, req.TokenID).Scan(&phoneNumber, &status, &expiresAt)
+
+// 	if err == sql.ErrNoRows || time.Now().After(expiresAt) || status != "used" {
+// 		return utils.ErrorResponse(c, 401, "Token sudah tidak valid")
+// 	}
+
+// 	var (
+// 		id, phone string
+// 		fullName  sql.NullString
+// 	)
+
+// 	err = database.DB.QueryRow(`
+// 		SELECT id, name, username
+// 		FROM users WHERE username = ?`, phoneNumber).
+// 		Scan(&id, &fullName, &phone)
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		return utils.ErrorResponse(c, 401, "User tidak ditemukan")
+// 	}
+
+// 	respUser := models.UserResponse{
+// 		ID:          id,
+// 		FullName:    nullToString(fullName),
+// 		PhoneNumber: phone,
+// 	}
+
+// 	isNewUser := respUser.FullName == ""
+
+// 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+// 		"id":   respUser.ID,
+// 		"role": respUser.Role,
+// 		"exp":  time.Now().Add(time.Hour * 72).Unix(),
+// 	})
+// 	finalToken, _ := accessToken.SignedString([]byte(config.JWTSecret))
+
+// 	return utils.SuccessResponse(c, "Login sukses", fiber.Map{
+// 		"access_token": finalToken,
+// 		"is_new_user":  isNewUser,
+// 		"user":         respUser,
+// 	})
+// }
+
 func ValidateWhatsAppLoginToken(c *fiber.Ctx) error {
 	type Req struct {
 		TokenID string `json:"token_id" validate:"required"`
@@ -194,11 +255,17 @@ func ValidateWhatsAppLoginToken(c *fiber.Ctx) error {
 
 	isNewUser := respUser.FullName == ""
 
+	// JWT standard claims for Laravel (tymon/jwt-auth compatibility)
+	now := time.Now()
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"id":   respUser.ID,
-		"role": respUser.Role,
-		"exp":  time.Now().Add(time.Hour * 72).Unix(),
+		"iss": "http://127.0.0.1:8000/api/login", // issuer URL sesuai Laravel
+		"iat": now.Unix(),                        // issued at
+		"nbf": now.Unix(),                        // not before
+		"exp": now.Add(time.Hour * 72).Unix(),    // expiration
+		"sub": respUser.ID,                       // user ID
+		// "jti": "optional-unique-id",                        // optional
 	})
+
 	finalToken, _ := accessToken.SignedString([]byte(config.JWTSecret))
 
 	return utils.SuccessResponse(c, "Login sukses", fiber.Map{
