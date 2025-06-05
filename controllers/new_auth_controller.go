@@ -83,14 +83,14 @@ func WhatsAppBotCallback(c *fiber.Ctx) error {
 
 	var userID string
 	isNewUser := false
-	err = database.DB.QueryRow(`SELECT id FROM users WHERE phone_number = ?`, req.PhoneNumber).Scan(&userID)
+	err = database.DB.QueryRow(`SELECT id FROM users WHERE username = ?`, req.PhoneNumber).Scan(&userID)
 
 	if err == sql.ErrNoRows {
-		_, err := database.DB.Exec(`INSERT INTO users (phone_number) VALUES (?)`, req.PhoneNumber)
+		_, err := database.DB.Exec(`INSERT INTO users (username, level) VALUES (?, ?)`, req.PhoneNumber, 3)
 		if err != nil {
 			return utils.ErrorResponse(c, 500, "Gagal membuat user")
 		}
-		err = database.DB.QueryRow(`SELECT id FROM users WHERE phone_number = ?`, req.PhoneNumber).Scan(&userID)
+		err = database.DB.QueryRow(`SELECT id FROM users WHERE username = ?`, req.PhoneNumber).Scan(&userID)
 		if err != nil {
 			return utils.ErrorResponse(c, 500, "Gagal mengambil ID user baru")
 		}
@@ -178,8 +178,8 @@ func ValidateWhatsAppLoginToken(c *fiber.Ctx) error {
 	)
 
 	err = database.DB.QueryRow(`
-		SELECT id, full_name, phone_number
-		FROM users WHERE phone_number = ?`, phoneNumber).
+		SELECT id, name, username
+		FROM users WHERE username = ?`, phoneNumber).
 		Scan(&id, &fullName, &phone)
 	if err != nil {
 		fmt.Println(err)
