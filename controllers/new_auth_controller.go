@@ -258,11 +258,11 @@ func ValidateWhatsAppLoginToken(c *fiber.Ctx) error {
 	// JWT standard claims for Laravel (tymon/jwt-auth compatibility)
 	now := time.Now()
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"iss": "http://127.0.0.1:8000/api/login", // issuer URL sesuai Laravel
-		"iat": now.Unix(),                        // issued at
-		"nbf": now.Unix(),                        // not before
-		"exp": now.Add(time.Hour * 72).Unix(),    // expiration
-		"sub": respUser.ID,                       // user ID
+		"iss": "http://127.0.0.1:8000/api/login",    // issuer URL sesuai Laravel
+		"iat": now.Unix(),                           // issued at
+		"nbf": now.Unix(),                           // not before
+		"exp": now.Add(time.Hour * 24 * 365).Unix(), // expiration
+		"sub": respUser.ID,                          // user ID
 		// "jti": "optional-unique-id",                        // optional
 	})
 
