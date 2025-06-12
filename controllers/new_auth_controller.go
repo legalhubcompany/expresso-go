@@ -137,11 +137,23 @@ func WhatsAppGateway(c *fiber.Ctx) error {
 		}
 		return c.Redirect(fmt.Sprintf("%s/--/(auth)/callback?token_id=%s", expoURL, tokenID))
 	}
-	expoURL := "u.expo.dev/f4783bf2-1e22-4027-8f67-4c07f2109382/group/622dd2c0-14a1-4dd2-b884-a3d9bdbf5c00"
-	if !strings.HasPrefix(expoURL, "exp://") {
-		expoURL = "exp://" + expoURL
+	// expoURL := "u.expo.dev/f4783bf2-1e22-4027-8f67-4c07f2109382/group/622dd2c0-14a1-4dd2-b884-a3d9bdbf5c00"
+	// if !strings.HasPrefix(expoURL, "exp://") {
+	// 	expoURL = "exp://" + expoURL
+	// }
+	// return c.Redirect(fmt.Sprintf("%s/--/(auth)/callback?token_id=%s", expoURL, tokenID))
+
+	var expoURL sql.NullString
+	err = database.DB.QueryRow(`SELECT url FROM expo_config LIMIT 1`).Scan(&expoURL)
+	if err != nil || !expoURL.Valid || expoURL.String == "" {
+		return c.SendString("Expo URL tidak tersedia.")
 	}
-	return c.Redirect(fmt.Sprintf("%s/--/(auth)/callback?token_id=%s", expoURL, tokenID))
+
+	expoURLStr := expoURL.String
+	if !strings.HasPrefix(expoURLStr, "exp://") {
+		expoURLStr = "exp://" + expoURLStr
+	}
+	return c.Redirect(fmt.Sprintf("%s/--/(auth)/callback?token_id=%s", expoURLStr, tokenID))
 	// Fallback ke schema app
 	// return c.Redirect("expressocoffee://login/callback?token_id=" + tokenID)
 }
