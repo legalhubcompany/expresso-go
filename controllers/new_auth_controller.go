@@ -137,7 +137,7 @@ func WhatsAppGateway(c *fiber.Ctx) error {
 		}
 		return c.Redirect(fmt.Sprintf("%s/--/(auth)/callback?token_id=%s", expoURL, tokenID))
 	}
-	expoURL := "u.expo.dev/f4783bf2-1e22-4027-8f67-4c07f2109382"
+	expoURL := "u.expo.dev/f4783bf2-1e22-4027-8f67-4c07f2109382/group/0ca924b5-840e-41e6-8397-d1aa63dd8b54"
 	if !strings.HasPrefix(expoURL, "exp://") {
 		expoURL = "exp://" + expoURL
 	}
