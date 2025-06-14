@@ -20,6 +20,8 @@ func SetupRoutes(app *fiber.App) {
 
 	gateway := app.Group("/gateway")
 	gateway.Get("/whatsapp-login", controllers.WhatsAppGateway)
+	gateway.Get("/webhook", controllers.WebhookVerify)
+	gateway.Post("/webhook", controllers.WebhookReceiver)
 
 	// new Login Via Whatsapp
 	new_auth := app.Group("/api/auth/v2")
