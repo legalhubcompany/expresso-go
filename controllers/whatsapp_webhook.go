@@ -35,6 +35,12 @@ func WebhookVerify(c *fiber.Ctx) error {
 	if mode == "subscribe" && token == config.VerifyToken {
 		return c.SendString(challenge)
 	}
+
+	fmt.Println("❌ Webhook verification failed")
+	fmt.Println("mode:", mode)
+	fmt.Println("token from Meta:", token)
+	fmt.Println("expected token:", config.VerifyToken)
+	fmt.Println("challenge:", challenge)
 	return c.SendStatus(403)
 }
 
