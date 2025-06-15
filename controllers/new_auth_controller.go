@@ -86,7 +86,7 @@ func WhatsAppBotCallback(c *fiber.Ctx) error {
 	err = database.DB.QueryRow(`SELECT id FROM users WHERE username = ?`, req.PhoneNumber).Scan(&userID)
 
 	if err == sql.ErrNoRows {
-		_, err := database.DB.Exec(`INSERT INTO users (username, level) VALUES (?, ?)`, req.PhoneNumber, 3)
+		_, err := database.DB.Exec(`INSERT INTO users (username, level) VALUES (?, ?)`, req.PhoneNumber, 5)
 		if err != nil {
 			return utils.ErrorResponse(c, 500, "Gagal membuat user")
 		}
