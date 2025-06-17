@@ -287,3 +287,43 @@ func ValidateWhatsAppLoginToken(c *fiber.Ctx) error {
 		"user":         respUser,
 	})
 }
+
+func UpdateProfile(c *fiber.Ctx) error {
+	type Req struct {
+		Name string `json:"name" validate:"required"`
+	}
+
+	var req Req
+	if err := c.BodyParser(&req); err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid input")
+	}
+
+	if err := utils.Validate.Struct(req); err != nil {
+		return utils.ValidationErrorResponse(c, err)
+	}
+
+	// Ambil ID dari JWT
+	userToken := c.Locals("user").(*jwt.Token)
+	claims := userToken.Claims.(jwt.MapClaims)
+	userID := claims["sub"].(string)
+
+	// Update name (bisa dikembangkan untuk field lain)
+	result, err := database.DB.Exec(`UPDATE users SET name = ? WHERE id = ?`, req.Name, userID)
+	if err != nil {
+		return utils.ErrorResponse(c, 500, "Gagal update profil")
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return utils.ErrorResponse(c, 500, "Gagal membaca hasil update")
+	}
+
+	if rowsAffected == 0 {
+		return utils.ErrorResponse(c, 404, "User tidak ditemukan")
+	}
+
+	return utils.SuccessResponse(c, "Profil berhasil diupdate", fiber.Map{
+		"id":   userID,
+		"name": req.Name,
+	})
+}

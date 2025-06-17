@@ -2,6 +2,7 @@ package routes
 
 import (
 	"shollu/controllers"
+	"shollu/middlewares"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -28,4 +29,7 @@ func SetupRoutes(app *fiber.App) {
 	new_auth.Post("/login/request", controllers.WhatsAppLoginRequest)
 	new_auth.Post("/login/whatsapp-bot", controllers.WhatsAppBotCallback)
 	new_auth.Post("/login/validate", controllers.ValidateWhatsAppLoginToken)
+
+	privateAPI := app.Group("/api/v1", middlewares.JWTMiddleware())
+	privateAPI.Put("/user/profile", controllers.UpdateProfile)
 }
