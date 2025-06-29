@@ -89,12 +89,12 @@ func CreateTransaksi(c *fiber.Ctx) error {
 		var namaVariant string
 
 		err := tx.QueryRow(`
-			SELECT dm.harga, m.nama, v.nama
-			FROM detail_menu dm
-			JOIN menu m ON dm.id_menu = m.id
-			JOIN varian v ON dm.id_varian = v.id
-			WHERE dm.id_menu = ? AND dm.id_varian = ?
-		`, menu.IdMenu, menu.IdVariant).Scan(&hargaStr, &namaMenu, &namaVariant)
+		SELECT dm.harga, m.nama, v.nama
+		FROM detail_menu dm
+		JOIN menu m ON dm.id_menu = m.id
+		JOIN varian v ON dm.id_varian = v.id
+		WHERE dm.id = ?
+		`, menu.IdVariant).Scan(&hargaStr, &namaMenu, &namaVariant)
 
 		if err == sql.ErrNoRows {
 			tx.Rollback()
