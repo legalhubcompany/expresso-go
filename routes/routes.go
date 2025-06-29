@@ -30,6 +30,12 @@ func SetupRoutes(app *fiber.App) {
 	new_auth.Post("/login/whatsapp-bot", controllers.WhatsAppBotCallback)
 	new_auth.Post("/login/validate", controllers.ValidateWhatsAppLoginToken)
 
+	// midtrans webhook
+	vendors := app.Group("/vendors/v1")
+	vendors.Post("/midtrans-webhook", controllers.MidtransWebhookCallback)
+
 	privateAPI := app.Group("/api/v1", middlewares.JWTMiddleware())
 	privateAPI.Put("/user/profile", controllers.UpdateProfile)
+	privateAPI.Post("/create-payment", controllers.CreatePayment)
+	privateAPI.Post("/create-transaksi", controllers.CreateTransaksi)
 }
