@@ -38,4 +38,5 @@ func SetupRoutes(app *fiber.App) {
 	privateAPI.Put("/user/profile", controllers.UpdateProfile)
 	privateAPI.Post("/create-payment", controllers.CreatePayment)
 	privateAPI.Post("/create-transaksi", controllers.CreateTransaksi)
+	privateAPI.Get("/master-data/pekerjaan", controllers.GetMasterPekerjaanList)
 }

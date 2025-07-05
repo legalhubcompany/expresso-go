@@ -290,7 +290,9 @@ func ValidateWhatsAppLoginToken(c *fiber.Ctx) error {
 
 func UpdateProfile(c *fiber.Ctx) error {
 	type Req struct {
-		Name string `json:"name" validate:"required"`
+		Name        string `json:"name" validate:"required"`
+		Gender      string `json:"gender"`       // opsional, validasi bisa ditambah kalau perlu
+		IDPekerjaan int    `json:"id_pekerjaan"` // opsional, validasi bisa ditambah kalau perlu
 	}
 
 	var req Req
@@ -302,13 +304,16 @@ func UpdateProfile(c *fiber.Ctx) error {
 		return utils.ValidationErrorResponse(c, err)
 	}
 
-	// Ambil ID dari JWT
 	userToken := c.Locals("user").(*jwt.Token)
 	claims := userToken.Claims.(jwt.MapClaims)
 	userID := claims["sub"].(string)
 
-	// Update name (bisa dikembangkan untuk field lain)
-	result, err := database.DB.Exec(`UPDATE users SET name = ? WHERE id = ?`, req.Name, userID)
+	result, err := database.DB.Exec(`
+		UPDATE users 
+		SET name = ?, gender = ?, id_pekerjaan = ? 
+		WHERE id = ?
+	`, req.Name, req.Gender, req.IDPekerjaan, userID)
+
 	if err != nil {
 		return utils.ErrorResponse(c, 500, "Gagal update profil")
 	}
@@ -323,7 +328,32 @@ func UpdateProfile(c *fiber.Ctx) error {
 	}
 
 	return utils.SuccessResponse(c, "Profil berhasil diupdate", fiber.Map{
-		"id":   userID,
-		"name": req.Name,
+		"id":           userID,
+		"name":         req.Name,
+		"gender":       req.Gender,
+		"id_pekerjaan": req.IDPekerjaan,
 	})
+}
+
+func GetMasterPekerjaanList(c *fiber.Ctx) error {
+	rows, err := database.DB.Query(`SELECT id, nama FROM master_pekerjaan ORDER BY nama ASC`)
+	if err != nil {
+		return utils.ErrorResponse(c, 500, "Gagal mengambil data master pekerjaan")
+	}
+	defer rows.Close()
+
+	var list []fiber.Map
+	for rows.Next() {
+		var id int
+		var nama string
+		if err := rows.Scan(&id, &nama); err != nil {
+			continue
+		}
+		list = append(list, fiber.Map{
+			"id":   id,
+			"nama": nama,
+		})
+	}
+
+	return utils.SuccessResponse(c, "Berhasil mengambil daftar pekerjaan", list)
 }
