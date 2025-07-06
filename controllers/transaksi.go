@@ -2,10 +2,10 @@ package controllers
 
 import (
 	"database/sql"
+	"fmt"
 	"shollu/database"
 	"shollu/utils"
 	"time"
-	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v4"
@@ -20,10 +20,11 @@ func CreateTransaksi(c *fiber.Ctx) error {
 	}
 
 	type Req struct {
-		IdOutlet int64     `json:"id_outlet" validate:"required"`
-		Nama     string    `json:"nama" validate:"required"`
-		Menus    []MenuReq `json:"menus" validate:"required,dive"`
-		IdPromo  int64     `json:"id_promo"`
+		IdBooth   int64     `json:"id_booth" validate:"required"`   // 🔁 Ganti dari id_outlet
+		IdBarista int64     `json:"id_barista" validate:"required"` // ✅ Tambah id_barista
+		Nama      string    `json:"nama" validate:"required"`
+		Menus     []MenuReq `json:"menus" validate:"required,dive"`
+		IdPromo   int64     `json:"id_promo"`
 	}
 
 	var req Req
@@ -34,7 +35,6 @@ func CreateTransaksi(c *fiber.Ctx) error {
 		return utils.ValidationErrorResponse(c, err)
 	}
 
-	// 🔑 Ambil user ID dari JWT
 	userToken := c.Locals("user").(*jwt.Token)
 	claims := userToken.Claims.(jwt.MapClaims)
 	userID := claims["sub"].(string)
@@ -42,23 +42,24 @@ func CreateTransaksi(c *fiber.Ctx) error {
 	now := time.Now()
 	total := int64(0)
 
-	// Mulai transaction DB
 	tx, err := database.DB.Begin()
 	if err != nil {
 		return utils.ErrorResponse(c, 500, "Gagal mulai transaksi DB")
 	}
 
+	// Logging Debug
 	fmt.Println("DEBUG total: ", total)
 	fmt.Println("DEBUG idUser: ", userID)
-	fmt.Println("DEBUG req.IdOutlet: ", req.IdOutlet)
+	fmt.Println("DEBUG req.IdBooth: ", req.IdBooth)
 	fmt.Println("DEBUG req.Nama: ", req.Nama)
+	fmt.Println("DEBUG req.IdBarista: ", req.IdBarista)
 
-	// Insert transaksi dulu dengan total 0, akan diupdate setelah perhitungan selesai
+	// Simpan transaksi awal
 	result, err := tx.Exec(`
 		INSERT INTO transaksi 
-		(id_user, id_barista, id_outlet, nama, tanggal, pukul, total, status, id_metode, created_at)
+		(id_user, id_barista, id_booth, nama, tanggal, pukul, total, status, id_metode, created_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		userID, 0, req.IdOutlet, req.Nama,
+		userID, req.IdBarista, req.IdBooth, req.Nama,
 		now.Format("2006-01-02"), now.Format("15:04:05"),
 		0, 0, 3, now,
 	)
@@ -69,7 +70,6 @@ func CreateTransaksi(c *fiber.Ctx) error {
 	}
 	idTransaksi, _ := result.LastInsertId()
 
-	// Prepare insert detail
 	stmt, err := tx.Prepare(`
 		INSERT INTO transaksi_detail
 		(id_transaksi, id_menu, nama_menu, id_variant, nama_variant, harga, qty, subtotal)
@@ -81,20 +81,17 @@ func CreateTransaksi(c *fiber.Ctx) error {
 	}
 	defer stmt.Close()
 
-	// Loop each menu to calculate
 	for _, menu := range req.Menus {
-		// 🔍 Ambil harga dari tabel detail_menu
 		var hargaStr string
-		var namaMenu string
-		var namaVariant string
+		var namaMenu, namaVariant string
 
 		err := tx.QueryRow(`
-		SELECT dm.harga, m.nama, v.nama
-		FROM detail_menu dm
-		JOIN menu m ON dm.id_menu = m.id
-		JOIN varian v ON dm.id_varian = v.id
-		WHERE dm.id = ?
-		`, menu.IdVariant).Scan(&hargaStr, &namaMenu, &namaVariant)
+			SELECT dm.harga, m.nama, v.nama
+			FROM detail_menu dm
+			JOIN menu m ON dm.id_menu = m.id
+			JOIN varian v ON dm.id_varian = v.id
+			WHERE dm.id = ?`, menu.IdVariant).
+			Scan(&hargaStr, &namaMenu, &namaVariant)
 
 		if err == sql.ErrNoRows {
 			tx.Rollback()
@@ -104,22 +101,14 @@ func CreateTransaksi(c *fiber.Ctx) error {
 			return utils.ErrorResponse(c, 500, "Database error (detail_menu)")
 		}
 
-		// Convert harga string to int64
 		hargaFinal := utils.StringToInt64(hargaStr)
-
 		subtotal := hargaFinal * menu.Qty
 		total += subtotal
 
-		// Insert detail
 		_, err = stmt.Exec(
-			idTransaksi,
-			menu.IdMenu,
-			namaMenu,
-			menu.IdVariant,
-			namaVariant,
-			hargaFinal,
-			menu.Qty,
-			subtotal,
+			idTransaksi, menu.IdMenu, namaMenu,
+			menu.IdVariant, namaVariant,
+			hargaFinal, menu.Qty, subtotal,
 		)
 		if err != nil {
 			tx.Rollback()
@@ -127,7 +116,6 @@ func CreateTransaksi(c *fiber.Ctx) error {
 		}
 	}
 
-	// 🏷️ Cek dan hitung promo jika ada
 	var potongan int64
 	if req.IdPromo != 0 {
 		var promoNama string
@@ -141,30 +129,24 @@ func CreateTransaksi(c *fiber.Ctx) error {
 			Scan(&promoNama, &promoPotongan, &promoMinimal, &mulai, &berakhir, &isActive)
 
 		if err == sql.ErrNoRows {
-			// Promo tidak ditemukan, abaikan atau rollback sesuai kebutuhanmu
+			// Promo tidak ditemukan, bisa diabaikan
 		} else if err != nil {
 			tx.Rollback()
 			return utils.ErrorResponse(c, 500, "Database error (promo)")
 		} else {
-			// Validasi promo
-			if !isActive || now.Before(mulai) || now.After(berakhir) {
-				// Promo tidak valid saat ini
-			} else if total >= promoMinimal {
-				// Promo berlaku
+			if isActive && !now.Before(mulai) && !now.After(berakhir) && total >= promoMinimal {
 				potongan = promoPotongan
 				total -= potongan
 			}
 		}
 	}
 
-	// Update total transaksi final
 	_, err = tx.Exec(`UPDATE transaksi SET total = ? WHERE id = ?`, total, idTransaksi)
 	if err != nil {
 		tx.Rollback()
 		return utils.ErrorResponse(c, 500, "Gagal update total transaksi")
 	}
 
-	// Commit transaction
 	if err := tx.Commit(); err != nil {
 		return utils.ErrorResponse(c, 500, "Gagal commit transaksi DB")
 	}
