@@ -20,11 +20,12 @@ func CreateTransaksi(c *fiber.Ctx) error {
 	}
 
 	type Req struct {
-		IdBooth   int64     `json:"id_booth" validate:"required"`   // 🔁 Ganti dari id_outlet
-		IdBarista int64     `json:"id_barista" validate:"required"` // ✅ Tambah id_barista
-		Nama      string    `json:"nama" validate:"required"`
-		Menus     []MenuReq `json:"menus" validate:"required,dive"`
-		IdPromo   int64     `json:"id_promo"`
+		IdBooth          int64     `json:"id_booth" validate:"required"`   // 🔁 Ganti dari id_outlet
+		IdBarista        int64     `json:"id_barista" validate:"required"` // ✅ Tambah id_barista
+		Nama             string    `json:"nama" validate:"required"`
+		Menus            []MenuReq `json:"menus" validate:"required,dive"`
+		IdPromo          int64     `json:"id_promo"`
+		MetodePengiriman string    `json:"metode_pengiriman" validate:"required,oneof=ambil-sendiri delivery-mandiri"`
 	}
 
 	var req Req
@@ -57,11 +58,11 @@ func CreateTransaksi(c *fiber.Ctx) error {
 	// Simpan transaksi awal
 	result, err := tx.Exec(`
 		INSERT INTO transaksi 
-		(id_user, id_barista, id_booth, nama, tanggal, pukul, total, status, id_metode, created_at)
+		(id_user, id_barista, id_booth, nama, tanggal, pukul, total, status, id_metode, created_at, metode_pengiriman)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		userID, req.IdBarista, req.IdBooth, req.Nama,
 		now.Format("2006-01-02"), now.Format("15:04:05"),
-		0, 0, 3, now,
+		0, 0, 3, now, req.MetodePengiriman,
 	)
 	if err != nil {
 		tx.Rollback()
