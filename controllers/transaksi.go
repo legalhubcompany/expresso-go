@@ -59,7 +59,7 @@ func CreateTransaksi(c *fiber.Ctx) error {
 	result, err := tx.Exec(`
 		INSERT INTO transaksi 
 		(id_user, id_barista, id_booth, nama, tanggal, pukul, total, status, id_metode, created_at, metode_pengiriman)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		userID, req.IdBarista, req.IdBooth, req.Nama,
 		now.Format("2006-01-02"), now.Format("15:04:05"),
 		0, 0, 3, now, req.MetodePengiriman,
