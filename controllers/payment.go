@@ -96,3 +96,90 @@ func CreatePayment(c *fiber.Ctx) error {
 		"amount":       total,
 	})
 }
+
+func GenerateNewPaymentAttempt(c *fiber.Ctx) error {
+	type Req struct {
+		IdTransaksi int64 `json:"id_transaksi" validate:"required"`
+	}
+	var req Req
+	if err := c.BodyParser(&req); err != nil {
+		return utils.ErrorResponse(c, 400, "Invalid input")
+	}
+	if err := utils.Validate.Struct(req); err != nil {
+		return utils.ValidationErrorResponse(c, err)
+	}
+
+	// Auth
+	userToken := c.Locals("user").(*jwt.Token)
+	claims := userToken.Claims.(jwt.MapClaims)
+	userID := claims["sub"].(string)
+
+	// Ambil data transaksi (pastikan milik user)
+	var total int64
+	var nama sql.NullString
+	if err := database.DB.QueryRow(`
+		SELECT t.total, t.nama
+		FROM transaksi t
+		WHERE t.id = ? AND t.id_user = ?`,
+		req.IdTransaksi, userID,
+	).Scan(&total, &nama); err != nil {
+		if err == sql.ErrNoRows {
+			return utils.ErrorResponse(c, 404, "Transaksi tidak ditemukan atau bukan milik Anda")
+		}
+		fmt.Println("DB error (transaksi):", err)
+		return utils.ErrorResponse(c, 500, "DB error (transaksi)")
+	}
+
+	// Init Midtrans client
+	mid := midtrans.NewClient()
+	mid.ServerKey = "SB-Mid-server-hYrHVhezuyR5OsijtGfBGSbQ"
+	mid.ClientKey = "SB-Mid-client-p0ktJt88DsJHmwKQ"
+	mid.APIEnvType = midtrans.Sandbox
+
+	// Buat order_id & Snap request
+	orderID := fmt.Sprintf("ORD-%d-%d", req.IdTransaksi, time.Now().Unix())
+	snap := midtrans.SnapGateway{Client: mid}
+	snapReq := &midtrans.SnapReq{
+		TransactionDetails: midtrans.TransactionDetails{
+			OrderID:  orderID,
+			GrossAmt: total,
+		},
+		CustomerDetail: &midtrans.CustDetail{
+			FName: nama.String,
+		},
+	}
+	snapResp, err := snap.GetToken(snapReq)
+	if err != nil {
+		return utils.ErrorResponse(c, 500, "Gagal membuat Snap token: "+err.Error())
+	}
+
+	expiredAt := time.Now().Add(2 * time.Hour)
+
+	// 🔑 Lepas semua payment lama agar orphan (id_transaksi jadi NULL)
+	if _, err := database.DB.Exec(`
+		UPDATE payments
+		SET id_transaksi = NULL
+		WHERE id_transaksi = ?`,
+		req.IdTransaksi,
+	); err != nil {
+		return utils.ErrorResponse(c, 500, "Gagal melepaskan payment lama")
+	}
+
+	// Simpan attempt baru, masih terhubung ke id_transaksi
+	if _, err := database.DB.Exec(`
+		INSERT INTO payments (order_id, id_transaksi, snap_token, snap_expired_at, status_midtrans, created_at)
+		VALUES (?, ?, ?, ?, 'pending', ?)`,
+		orderID, req.IdTransaksi, snapResp.Token, expiredAt, time.Now(),
+	); err != nil {
+		return utils.ErrorResponse(c, 500, "Gagal menyimpan payment baru")
+	}
+
+	// Response ke frontend
+	return utils.SuccessResponse(c, "Payment baru dibuat", fiber.Map{
+		"order_id":     orderID,
+		"snap_token":   snapResp.Token,
+		"redirect_url": snapResp.RedirectURL,
+		"expired_at":   expiredAt.Format(time.RFC3339),
+		"amount":       total,
+	})
+}

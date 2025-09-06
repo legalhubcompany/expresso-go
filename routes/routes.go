@@ -37,6 +37,7 @@ func SetupRoutes(app *fiber.App) {
 	privateAPI := app.Group("/api/v1", middlewares.JWTMiddleware())
 	privateAPI.Put("/user/profile", controllers.UpdateProfile)
 	privateAPI.Post("/create-payment", controllers.CreatePayment)
+	privateAPI.Post("/update-payment", controllers.GenerateNewPaymentAttempt)
 	privateAPI.Post("/create-transaksi", controllers.CreateTransaksi)
 	privateAPI.Get("/master-data/pekerjaan", controllers.GetMasterPekerjaanList)
 }

@@ -99,5 +99,5 @@ func main() {
 	// Endpoint `/metrics` untuk Prometheus
 	app.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 
-	app.Listen("0.0.0.0:5000")
+	app.Listen("0.0.0.0:3000")
 }
