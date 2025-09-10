@@ -112,6 +112,53 @@ func WhatsAppBotCallback(c *fiber.Ctx) error {
 	})
 }
 
+// // Redirect dari link WA ke app
+// func WhatsAppGateway(c *fiber.Ctx) error {
+// 	tokenID := c.Query("token_id")
+// 	if tokenID == "" {
+// 		return c.SendString("Token ID tidak ditemukan.")
+// 	}
+
+// 	var expiresAt time.Time
+// 	var status string
+// 	var expoHost sql.NullString
+
+// 	err := database.DB.QueryRow(`
+// 		SELECT expires_at, status, expo_host FROM login_tokens WHERE token_id = ?`, tokenID).
+// 		Scan(&expiresAt, &status, &expoHost)
+
+// 	if err != nil || time.Now().After(expiresAt) || status != "used" {
+// 		return c.SendString("Token sudah tidak berlaku atau belum digunakan.")
+// 	}
+
+// 	if expoHost.Valid && expoHost.String != "" {
+// 		expoURL := expoHost.String
+// 		if !strings.HasPrefix(expoURL, "exp://") {
+// 			expoURL = "exp://" + expoURL
+// 		}
+// 		return c.Redirect(fmt.Sprintf("%s/--/(auth)/callback?token_id=%s", expoURL, tokenID))
+// 	}
+// 	// expoURL := "u.expo.dev/f4783bf2-1e22-4027-8f67-4c07f2109382/group/622dd2c0-14a1-4dd2-b884-a3d9bdbf5c00"
+// 	// if !strings.HasPrefix(expoURL, "exp://") {
+// 	// 	expoURL = "exp://" + expoURL
+// 	// }
+// 	// return c.Redirect(fmt.Sprintf("%s/--/(auth)/callback?token_id=%s", expoURL, tokenID))
+
+// 	var expoURL sql.NullString
+// 	err = database.DB.QueryRow(`SELECT url FROM expo_config LIMIT 1`).Scan(&expoURL)
+// 	if err != nil || !expoURL.Valid || expoURL.String == "" {
+// 		return c.SendString("Expo URL tidak tersedia.")
+// 	}
+
+// 	expoURLStr := expoURL.String
+// 	if !strings.HasPrefix(expoURLStr, "exp://") {
+// 		expoURLStr = "exp://" + expoURLStr
+// 	}
+// 	return c.Redirect(fmt.Sprintf("%s/--/(auth)/callback?token_id=%s", expoURLStr, tokenID))
+// 	// Fallback ke schema app
+// 	// return c.Redirect("expressocoffee://login/callback?token_id=" + tokenID)
+// }
+
 // Redirect dari link WA ke app
 func WhatsAppGateway(c *fiber.Ctx) error {
 	tokenID := c.Query("token_id")
@@ -121,42 +168,18 @@ func WhatsAppGateway(c *fiber.Ctx) error {
 
 	var expiresAt time.Time
 	var status string
-	var expoHost sql.NullString
 
 	err := database.DB.QueryRow(`
-		SELECT expires_at, status, expo_host FROM login_tokens WHERE token_id = ?`, tokenID).
-		Scan(&expiresAt, &status, &expoHost)
+		SELECT expires_at, status FROM login_tokens WHERE token_id = ?`, tokenID).
+		Scan(&expiresAt, &status)
 
 	if err != nil || time.Now().After(expiresAt) || status != "used" {
 		return c.SendString("Token sudah tidak berlaku atau belum digunakan.")
 	}
 
-	if expoHost.Valid && expoHost.String != "" {
-		expoURL := expoHost.String
-		if !strings.HasPrefix(expoURL, "exp://") {
-			expoURL = "exp://" + expoURL
-		}
-		return c.Redirect(fmt.Sprintf("%s/--/(auth)/callback?token_id=%s", expoURL, tokenID))
-	}
-	// expoURL := "u.expo.dev/f4783bf2-1e22-4027-8f67-4c07f2109382/group/622dd2c0-14a1-4dd2-b884-a3d9bdbf5c00"
-	// if !strings.HasPrefix(expoURL, "exp://") {
-	// 	expoURL = "exp://" + expoURL
-	// }
-	// return c.Redirect(fmt.Sprintf("%s/--/(auth)/callback?token_id=%s", expoURL, tokenID))
-
-	var expoURL sql.NullString
-	err = database.DB.QueryRow(`SELECT url FROM expo_config LIMIT 1`).Scan(&expoURL)
-	if err != nil || !expoURL.Valid || expoURL.String == "" {
-		return c.SendString("Expo URL tidak tersedia.")
-	}
-
-	expoURLStr := expoURL.String
-	if !strings.HasPrefix(expoURLStr, "exp://") {
-		expoURLStr = "exp://" + expoURLStr
-	}
-	return c.Redirect(fmt.Sprintf("%s/--/(auth)/callback?token_id=%s", expoURLStr, tokenID))
-	// Fallback ke schema app
-	// return c.Redirect("expressocoffee://login/callback?token_id=" + tokenID)
+	// Redirect langsung ke schema app (deep link)
+	appURL := fmt.Sprintf("expresso-express://(auth)/callback?token_id=%s", tokenID)
+	return c.Redirect(appURL, fiber.StatusTemporaryRedirect)
 }
 
 // Validasi token dari app dan generate JWT final
