@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"shollu/database"
 	"shollu/utils"
+	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -14,9 +15,10 @@ import (
 // CreateTransaksi dengan harga dari tabel detail_menu
 func CreateTransaksi(c *fiber.Ctx) error {
 	type MenuReq struct {
-		IdMenu    int64 `json:"id_menu" validate:"required"`
-		IdVariant int64 `json:"id_variant" validate:"required"`
-		Qty       int64 `json:"qty" validate:"required,min=1"`
+		IdMenu    int64  `json:"id_menu" validate:"required"`
+		IdVariant int64  `json:"id_variant" validate:"required"`
+		Qty       int64  `json:"qty" validate:"required,min=1"`
+		Note      string `json:"note" validate:"omitempty,max=200"`
 	}
 
 	type Req struct {
@@ -73,8 +75,8 @@ func CreateTransaksi(c *fiber.Ctx) error {
 
 	stmt, err := tx.Prepare(`
 		INSERT INTO transaksi_detail
-		(id_transaksi, id_menu, nama_menu, id_variant, nama_variant, harga, qty, subtotal)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		(id_transaksi, id_menu, nama_menu, id_variant, nama_variant, harga, qty, subtotal, note)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`)
 	if err != nil {
 		tx.Rollback()
@@ -106,10 +108,12 @@ func CreateTransaksi(c *fiber.Ctx) error {
 		subtotal := hargaFinal * menu.Qty
 		total += subtotal
 
+		note := strings.TrimSpace(menu.Note)
+
 		_, err = stmt.Exec(
 			idTransaksi, menu.IdMenu, namaMenu,
 			menu.IdVariant, namaVariant,
-			hargaFinal, menu.Qty, subtotal,
+			hargaFinal, menu.Qty, subtotal, note,
 		)
 		if err != nil {
 			tx.Rollback()
