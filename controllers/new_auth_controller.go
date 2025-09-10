@@ -232,7 +232,7 @@ func ValidateWhatsAppLoginToken(c *fiber.Ctx) error {
 	if err := utils.Validate.Struct(req); err != nil {
 		return utils.ValidationErrorResponse(c, err)
 	}
-	fmt.Println("ValidateWhatsAppLoginToken called" + req.TokenID)
+	fmt.Println("ValidateWhatsAppLoginToken called " + req.TokenID)
 
 	var phoneNumber string
 	var status string
@@ -281,7 +281,11 @@ func ValidateWhatsAppLoginToken(c *fiber.Ctx) error {
 	})
 
 	finalToken, _ := accessToken.SignedString([]byte(config.JWTSecret))
-
+	fmt.Println(fiber.Map{
+		"access_token": finalToken,
+		"is_new_user":  isNewUser,
+		"user":         respUser,
+	})
 	return utils.SuccessResponse(c, "Login sukses", fiber.Map{
 		"access_token": finalToken,
 		"is_new_user":  isNewUser,
