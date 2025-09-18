@@ -89,7 +89,7 @@ func CreateTransaksi(c *fiber.Ctx) error {
 		var namaMenu, namaVariant string
 
 		err := tx.QueryRow(`
-			SELECT dm.harga, m.nama, v.nama
+			SELECT dm.subtotal, m.nama, v.nama
 			FROM detail_menu dm
 			JOIN menu m ON dm.id_menu = m.id
 			JOIN varian v ON dm.id_varian = v.id
